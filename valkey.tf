@@ -20,6 +20,7 @@ module "elasticache_serverless_valkey" {
   security_group_ids   = [aws_security_group.valkey_sg.id]
   subnet_ids           = var.subnet_ids # slice(module.common_vpc.database_subnets, 0, 2)
   user_group_id        = var.create_valkey_user_and_secret ? aws_elasticache_user_group.valkey_users[0].id : null
+  snapshot_arns_to_restore = var.snapshot_arns_to_restore
 
   tags = {
     Name        = "${var.product_name}-${var.environment}-valkey"
