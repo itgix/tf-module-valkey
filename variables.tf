@@ -55,12 +55,12 @@ variable "engine_version" {
 
 variable "data_storage_max" {
   type    = number
-  default = 2
+  default = null
 }
 
 variable "ecpu_per_second_max" {
   type    = number
-  default = 1000
+  default = null
 }
 
 variable "create_valkey_user_and_secret" {
