@@ -5,9 +5,9 @@ module "elasticache_serverless_valkey" {
   cache_name = "${local.resource_tag}-valkey"
   engine     = "valkey"
 
-  cache_usage_limits = (var.data_storage_max != null && var.ecpu_per_second_max != null) ? {
-    data_storage    = { maximum = var.data_storage_max }
-    ecpu_per_second = { maximum = var.ecpu_per_second_max }
+  cache_usage_limits = (var.data_storage_max != null || var.ecpu_per_second_max != null) ? {
+    data_storage    = var.data_storage_max != null ? { maximum = var.data_storage_max } : null
+    ecpu_per_second = var.ecpu_per_second_max != null ? { maximum = var.ecpu_per_second_max } : null
   } : null
 
   daily_snapshot_time  = var.snapshot_time
