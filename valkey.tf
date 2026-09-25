@@ -5,14 +5,10 @@ module "elasticache_serverless_valkey" {
   cache_name = "${local.resource_tag}-valkey"
   engine     = "valkey"
 
-  cache_usage_limits = {
-    data_storage = {
-      maximum = var.data_storage_max
-    }
-    ecpu_per_second = {
-      maximum = var.ecpu_per_second_max
-    }
-  }
+  cache_usage_limits = (var.snapshot_arns_to_restore == null && (var.data_storage_max != null || var.ecpu_per_second_max != null)) ? {
+    data_storage    = var.data_storage_max != null ? { maximum = var.data_storage_max } : null
+    ecpu_per_second = var.ecpu_per_second_max != null ? { maximum = var.ecpu_per_second_max } : null
+  } : {}
 
   daily_snapshot_time  = var.snapshot_time
   description          = "Serverless Valkey cache for ${var.product_name} in ${var.environment}"
@@ -20,6 +16,7 @@ module "elasticache_serverless_valkey" {
   security_group_ids   = [aws_security_group.valkey_sg.id]
   subnet_ids           = var.subnet_ids # slice(module.common_vpc.database_subnets, 0, 2)
   user_group_id        = var.create_valkey_user_and_secret ? aws_elasticache_user_group.valkey_users[0].id : null
+  snapshot_arns_to_restore = var.snapshot_arns_to_restore
 
   tags = {
     Name        = "${var.product_name}-${var.environment}-valkey"
