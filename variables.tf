@@ -67,3 +67,9 @@ variable "create_valkey_user_and_secret" {
   type    = bool
   default = true
 }
+
+variable "snapshot_arns_to_restore" {
+  type        = list(string)
+  description = "ARN(s) of existing ElastiCache snapshot(s) to restore the serverless cache from. Redis snapshots only (AWS limitation)."
+  default     = null
+}
