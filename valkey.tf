@@ -10,20 +10,15 @@ module "elasticache_serverless_valkey" {
     ecpu_per_second = var.ecpu_per_second_max != null ? { maximum = var.ecpu_per_second_max } : null
   } : {}
 
-  daily_snapshot_time  = var.snapshot_time
-  description          = "Serverless Valkey cache for ${var.product_name} in ${var.environment}"
-  major_engine_version = var.engine_version
-  security_group_ids   = [aws_security_group.valkey_sg.id]
-  subnet_ids           = var.subnet_ids # slice(module.common_vpc.database_subnets, 0, 2)
-  user_group_id        = var.create_valkey_user_and_secret ? aws_elasticache_user_group.valkey_users[0].id : null
+  daily_snapshot_time      = var.snapshot_time
+  description              = "Serverless Valkey cache for ${var.product_name} in ${var.environment}"
+  major_engine_version     = var.engine_version
+  security_group_ids       = [aws_security_group.valkey_sg.id]
+  subnet_ids               = var.subnet_ids # slice(module.common_vpc.database_subnets, 0, 2)
+  user_group_id            = var.create_valkey_user_and_secret ? aws_elasticache_user_group.valkey_users[0].id : null
   snapshot_arns_to_restore = var.snapshot_arns_to_restore
 
-  tags = {
-    Name        = "${var.product_name}-${var.environment}-valkey"
-    Environment = var.environment
-    Product     = var.product_name
-    Bango       = local.resource_tag
-  }
+  tags = merge({ Name = "${var.product_name}-${var.environment}-valkey" }, var.tags)
 }
 
 resource "random_password" "valkey_special_password" {
@@ -40,6 +35,7 @@ resource "aws_elasticache_user" "valkey_user" {
   engine        = "valkey"
   passwords     = [random_password.valkey_special_password[0].result]
   access_string = "on ~* +@all"
+  tags          = var.tags
 }
 
 resource "aws_elasticache_user_group" "valkey_users" {
@@ -47,6 +43,7 @@ resource "aws_elasticache_user_group" "valkey_users" {
   user_group_id = local.valkey_user_group_name
   engine        = "valkey"
   user_ids      = [aws_elasticache_user.valkey_user[0].user_id]
+  tags          = var.tags
 }
 
 resource "aws_security_group" "valkey_sg" {
@@ -69,9 +66,7 @@ resource "aws_security_group" "valkey_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "valkey-serverless-sg"
-  }
+  tags = merge({ Name = "valkey-serverless-sg" }, var.tags)
 }
 
 module "valkey_additional_secrets" {
@@ -80,6 +75,8 @@ module "valkey_additional_secrets" {
 
   source  = "lgallard/secrets-manager/aws"
   version = "0.6.2"
+
+  tags = var.tags
 
   secrets = {
     (local.valkey_user_name) = {
