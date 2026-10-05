@@ -49,7 +49,8 @@ AWS account permissions sufficient to manage:
 |---|---|---:|---|
 | `aws_region` | `string` | n/a | AWS region to deploy to (also used for short code in names). |
 | `environment` | `string` | n/a | Environment label (e.g., `dev`, `stg`, `prod`). |
-| `product_name` | `string` | n/a | Product / platform name (used in names and tags). |
+| `product_name` | `string` | n/a | Product / platform name (used in resource names). |
+| `tags` | `map(string)` | `{}` | Tags applied to every AWS resource the module creates (cache, user, user group, security group, secret). Merged over the module's `Name` tag; these tags win on conflict. |
 | `vpc_id` | `string` | n/a | VPC for the cache SG. |
 | `subnet_ids` | `list(string)` | `[]` | Subnets used by the Serverless cache. Supply 2+ subnets in distinct AZs. |
 | `redis_allowed_security_group_ids` | `list(string)` | n/a | SG IDs that may connect to Valkey on TCP/6379. |

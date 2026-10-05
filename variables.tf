@@ -18,7 +18,13 @@ variable "environment" {
 
 variable "product_name" {
   type        = string
-  description = "Bango platform instance (same as provided tag in default_tags)"
+  description = "Product / platform name, used in resource names"
+}
+
+variable "tags" {
+  description = "Map of tags to apply to every AWS resource created by this module (cache, user, user group, security group, secret). Merged over the module's Name tag; these tags win on conflict."
+  type        = map(string)
+  default     = {}
 }
 
 ################################################################################
