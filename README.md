@@ -38,6 +38,8 @@ AWS account permissions sufficient to manage:
 - *(Optional)* **AWS Secrets Manager** secret:
   - Name: `${local.valkey_user_name}`
   - Value: `{ username, password }`
+- *(Optional)* **Extra users**: one ElastiCache user plus one Secrets Manager secret (`{ username, password }`) per `valkey_extra_users` entry, named `<resource_tag>-valkey-<key>` and added to the user group
+- *(Optional)* **Existing users in the group**: `valkey_extra_user_ids` adds existing ElastiCache user ids (e.g. `default-valkey`) to the user group
 
 > **Naming:** `resource_tag = <regionShort>-<environment>-<product_name>`, e.g. `ue1-prod-myapp`. Short codes come from `locals.aws_regions_short`.
 
@@ -59,6 +61,21 @@ AWS account permissions sufficient to manage:
 | `data_storage_max` | `number` | `2` | Max data storage (GiB) for Serverless usage limits. |
 | `ecpu_per_second_max` | `number` | `1000` | Max eCPU per second for Serverless usage limits. |
 | `create_valkey_user_and_secret` | `bool` | `true` | Create ElastiCache User/UserGroup and store creds in Secrets Manager. |
+| `valkey_extra_user_ids` | `list(string)` | `[]` | IDs of existing ElastiCache users to add to the Valkey user group in addition to the users this module creates, e.g. `["default-valkey"]` to keep the engine's built-in default user in the group. Only applied when `create_valkey_user_and_secret` is true. |
+| `valkey_extra_users` | `map(object({ access_string = optional(string, "on ~* +@all") }))` | `{}` | Extra ElastiCache users to create and add to the Valkey user group, keyed by a short name. Each user is named `<resource_tag>-valkey-<key>` (user_id and user_name), gets a generated password and a Secrets Manager secret of the same name containing `{username, password}`. Only applied when `create_valkey_user_and_secret` is true. |
+
+---
+
+## User group membership
+
+The user group contains:
+- the module's primary user,
+- every extra user created from `valkey_extra_users`,
+- every id listed in `valkey_extra_user_ids`.
+
+`default-valkey` is AWS's built-in default user for the Valkey engine. If it is not listed in `valkey_extra_user_ids`, it is removed from the group, after which clients must authenticate with a named user and its password.
+
+Both inputs are ignored when `create_valkey_user_and_secret = false`, because no user group is managed then.
 
 ---
 
@@ -105,4 +122,10 @@ module "valkey" {
   data_storage_max      = 4
   ecpu_per_second_max   = 2000
   create_valkey_user_and_secret = true
+
+  valkey_extra_user_ids = ["default-valkey"]
+  valkey_extra_users = {
+    billing = {}                                   # fs1-dev-ss-valkey-billing style name, full access
+    readonly = { access_string = "on ~* +@read" }
+  }
 }

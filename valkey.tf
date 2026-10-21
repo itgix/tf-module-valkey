@@ -38,12 +38,33 @@ resource "aws_elasticache_user" "valkey_user" {
   tags          = var.tags
 }
 
+resource "random_password" "valkey_extra_user_password" {
+  for_each         = local.valkey_extra_users
+  length           = 20
+  special          = true
+  override_special = "!&#^<>-"
+}
+
+resource "aws_elasticache_user" "valkey_extra_user" {
+  for_each      = local.valkey_extra_users
+  user_id       = local.valkey_extra_user_names[each.key]
+  user_name     = local.valkey_extra_user_names[each.key]
+  engine        = "valkey"
+  passwords     = [random_password.valkey_extra_user_password[each.key].result]
+  access_string = each.value.access_string
+  tags          = var.tags
+}
+
 resource "aws_elasticache_user_group" "valkey_users" {
   count         = var.create_valkey_user_and_secret ? 1 : 0
   user_group_id = local.valkey_user_group_name
   engine        = "valkey"
-  user_ids      = [aws_elasticache_user.valkey_user[0].user_id]
-  tags          = var.tags
+  user_ids = distinct(concat(
+    [aws_elasticache_user.valkey_user[0].user_id],
+    [for u in aws_elasticache_user.valkey_extra_user : u.user_id],
+    var.valkey_extra_user_ids,
+  ))
+  tags = var.tags
 }
 
 resource "aws_security_group" "valkey_sg" {
@@ -71,19 +92,29 @@ resource "aws_security_group" "valkey_sg" {
 
 module "valkey_additional_secrets" {
   count      = var.create_valkey_user_and_secret ? 1 : 0
-  depends_on = [random_password.valkey_special_password]
+  depends_on = [random_password.valkey_special_password, random_password.valkey_extra_user_password]
 
   source  = "lgallard/secrets-manager/aws"
   version = "0.6.2"
 
   tags = var.tags
 
-  secrets = {
-    (local.valkey_user_name) = {
-      secret_key_value = {
-        username = local.valkey_user_name
-        password = random_password.valkey_special_password[0].result
+  secrets = merge(
+    {
+      (local.valkey_user_name) = {
+        secret_key_value = {
+          username = local.valkey_user_name
+          password = random_password.valkey_special_password[0].result
+        }
       }
-    }
-  }
+    },
+    {
+      for k, name in local.valkey_extra_user_names : name => {
+        secret_key_value = {
+          username = name
+          password = random_password.valkey_extra_user_password[k].result
+        }
+      }
+    },
+  )
 }

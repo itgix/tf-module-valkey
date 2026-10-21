@@ -28,6 +28,10 @@ locals {
   valkey_user_group_name = format("%s-valkey-grp", local.resource_tag)
   valkey_user_name       = format("%s-valkey-user", local.resource_tag)
 
+  # Extra users only make sense when the module manages the user group.
+  valkey_extra_users      = var.create_valkey_user_and_secret ? var.valkey_extra_users : {}
+  valkey_extra_user_names = { for k, v in local.valkey_extra_users : k => format("%s-valkey-%s", local.resource_tag, k) }
+
 }
 
 
